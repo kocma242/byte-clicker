@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Byte Clicker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #0b0b0f;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      user-select: none;
+    }
+
+    .balance-label {
+      margin-top: 12px;
+      letter-spacing: 2px;
+      font-size: 13px;
+      color: #9a9aa5;
+    }
+
+    .balance-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .balance {
+      font-size: 38px;
+      font-weight: 700;
+      text-shadow: 0 0 18px rgba(247, 202, 24, .45);
+    }
+
+    .coin-mini {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffe66d, #f7ca18 60%, #b8860b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #7a5c00;
+      font-size: 20px;
+    }
+
+    .coin-wrap {
+      position: relative;
+      margin-top: 28px;
+    }
+
+    .coin {
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffe66d, #f7ca18 55%, #b8860b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 150px;
+      font-weight: 800;
+      color: #8a6d00;
+      box-shadow: 0 0 60px rgba(247, 202, 24, .35), inset 0 -8px 20px rgba(0,0,0,.25);
+      cursor: pointer;
+      transition: transform .08s;
+      border: 6px solid #a97b00;
+    }
+
+    .coin:active {
+      transform: scale(.94);
+    }
+
+    .float {
+      position: absolute;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffe66d;
+      pointer-events: none;
+      animation: rise .8s ease-out forwards;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-70px);
+      }
+    }
+
+    .menu {
+      margin-top: auto;
+      width: 100%;
+      max-width: 420px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px 0;
+    }
+
+    .menu button {
+      background: #17171d;
+      border: 1px solid #26262e;
+      border-radius: 14px;
+      padding: 14px 6px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .menu button:active {
+      background: #22222b;
+    }
+
+    .panel {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      background: #17171d;
+      border: 1px solid #26262e;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 16px;
+      text-align: center;
+      color: #cfcfd6;
+      line-height: 1.5;
+    }
+
+    .panel.open {
+      display: block;
+    }
+
+    .shop-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #1d1d24;
+      border: 1px solid #2c2c35;
+      text-align: left;
+    }
+
+    .shop-item strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .shop-item small {
+      color: #a3a3af;
+    }
+
+    .shop-item button {
+      background: #f7ca18;
+      color: #111;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .shop-item button:active {
+      opacity: 0.9;
+    }
+
+    .panel h3 {
+      color: #fff;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="balance-label">ВАШ СЧЕТ</div>
+  <div class="balance-row">
+    <div class="balance" id="balance">0.00</div>
+    <div class="coin-mini">B</div>
+  </div>
+
+  <div class="coin-wrap">
+    <div class="coin" id="coin">B</div>
+  </div>
+
+  <div class="panel" id="panel"></div>
+
+  <div class="menu">
+    <button data-tab="leaders">🏆<br>Лидеры</button>
+    <button data-tab="market">🛒<br>Маркет</button>
+    <button data-tab="games">🎮<br>Игры</button>
+    <button data-tab="wallet">👛<br>Кошелек</button>
+    <button data-tab="more">☰<br>Прочее</button>
+    <button data-tab="friends">👥<br>Друзья</button>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'byte_balance';
+    const TAP_BASE = 0.01;
+
+    const state = {
+      balance: Number(localStorage.getItem(STORAGE_KEY) || 0),
+      tapMultiplier: 1,
+      tapBoostLevel: 0,
+      autoIncome: 0,
+      autoIncomeLevel: 0
+    };
+
+    const balanceEl = document.getElementById('balance');
+    const coin = document.getElementById('coin');
+    const panel = document.getElementById('panel');
+
+    function formatBalance(value) {
+      return Number(value).toFixed(2);
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, state.balance.toFixed(2));
+    }
+
+    function renderBalance() {
+      balanceEl.textContent = formatBalance(state.balance);
+      saveState();
+      sendToTelegram();
+    }
+
+    function sendToTelegram() {
+      const tg = window.Telegram?.WebApp;
+      if (!tg) return;
+
+      tg.ready();
+      tg.sendData(JSON.stringify({
+        balance: Number(state.balance.toFixed(2)),
+        tapMultiplier: state.tapMultiplier,
+        autoIncome: state.autoIncome
+      }));
+    }
+
+    function buyTapBoost() {
+      const cost = 10 + state.tapBoostLevel * 15;
+
+      if (state.balance < cost) {
+        panel.innerHTML = `
+          <h3>Усилитель</h3>
+          <p>Нужно ещё ${formatBalance(cost - state.balance)} B.</p>
+        `;
+        panel.classList.add('open');
+        return;
+      }
+
+      state.balance = Number((state.balance - cost).toFixed(2));
+      state.tapMultiplier *= 2;
+      state.tapBoostLevel += 1;
+      renderBalance();
+      renderMarket();
+    }
+
+    function buyAutoIncome() {
+      const cost = 15 + state.autoIncomeLevel * 20;
+
+      if (state.balance < cost) {
+        panel.innerHTML = `
+          <h3>Автокликер</h3>
+          <p>Нужно ещё ${formatBalance(cost - state.balance)} B.</p>
+        `;
+        panel.classList.add('open');
+        return;
+      }
+
+      state.balance = Number((state.balance - cost).toFixed(2));
+      state.autoIncome = Number((state.autoIncome + 0.25).toFixed(2));
+      state.autoIncomeLevel += 1;
+      renderBalance();
+      renderMarket();
+    }
+
+    function renderMarket() {
+      const tapCost = 10 + state.tapBoostLevel * 15;
+      const autoCost = 15 + state.autoIncomeLevel * 20;
+
+      panel.innerHTML = `
+        <h3>Магазин</h3>
+
+        <div class="shop-item">
+          <div>
+            <strong>Усилитель ×2</strong>
+            <small>Уровень ${state.tapBoostLevel} · Цена ${formatBalance(tapCost)} B</small>
+          </div>
+          <button data-buy="tap">Купить</button>
+        </div>
+
+        <div class="shop-item">
+          <div>
+            <strong>Автокликер</strong>
+            <small>+0.25 B/с · Цена ${formatBalance(autoCost)} B</small>
+          </div>
+          <button data-buy="auto">Купить</button>
+        </div>
+      `;
+
+      panel.classList.add('open');
+    }
+
+    function renderTextPanel(title, text) {
+      panel.innerHTML = `<h3>${title}</h3><p>${text}</p>`;
+      panel.classList.add('open');
+    }
+
+    coin.addEventListener('click', (e) => {
+      const gain = Number((TAP_BASE * state.tapMultiplier).toFixed(2));
+      state.balance = Number((state.balance + gain).toFixed(2));
+      renderBalance();
+
+      const float = document.createElement('div');
+      float.className = 'float';
+      float.textContent = '+' + gain.toFixed(2);
+      const rect = coin.getBoundingClientRect();
+      float.style.left = (e.clientX - rect.left) + 'px';
+      float.style.top = (e.clientY - rect.top - 10) + 'px';
+      coin.parentElement.appendChild(float);
+
+      setTimeout(() => float.remove(), 800);
+    });
+
+    panel.addEventListener('click', (e) => {
+      const buyBtn = e.target.closest('[data-buy]');
+      if (!buyBtn) return;
+
+      const action = buyBtn.dataset.buy;
+      if (action === 'tap') buyTapBoost();
+      if (action === 'auto') buyAutoIncome();
+    });
+
+    document.querySelectorAll('.menu button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+
+        const texts = {
+          leaders: '🏆 Лидеры — таблица рейтинга появится, когда подключим сервер.',
+          games: '🎮 Игры — дополнительные мини-игры в разработке.',
+          wallet: '👛 Кошелек — здесь будет вывод монет.',
+          more: '☰ Прочее — настройки и бонусы.',
+          friends: '👥 Друзья — пригласите друга и получите бонус!'
+        };
+
+        if (tab === 'market') {
+          renderMarket();
+          return;
+        }
+
+        renderTextPanel(
+          btn.innerText.replace(/\n/g, ' ').trim(),
+          texts[tab] || 'Пока здесь ничего нет.'
+        );
+      });
+    });
+
+    setInterval(() => {
+      if (state.autoIncome > 0) {
+        state.balance = Number((state.balance + state.autoIncome).toFixed(2));
+        renderBalance();
+      }
+    }, 1000);
+
+    renderBalance();
+  </script>
+</body>
+</html>
